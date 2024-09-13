@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import math
+from collections import Counter
 # Xử lý ảnh gốc
 def cut_unecessary_img(image):
     """
@@ -9,12 +11,12 @@ def cut_unecessary_img(image):
     image (array): Ảnh đầu vào cần xử lý, định dạng BGR.
 
     Returns:
-    array: Ảnh đã cắt.
+    array: Ảnh đã cắt hoặc ảnh ban đầu nếu không tìm thấy đường viền phù hợp.
     """
     # Kiểm tra xem ảnh có được đọc thành công không
     if image is None:
         print("Ảnh không hợp lệ.")
-        return
+        return image
 
     # Chuyển đổi ảnh sang ảnh xám
     gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -33,7 +35,7 @@ def cut_unecessary_img(image):
     mask = np.zeros_like(gray_image)
 
     # Lưu các đường viền thỏa mãn điều kiện vào tuple
-    new_contours = ()
+    new_contours = []
 
     # Thiết lập chiều cao tối thiểu cho đường viền (50% chiều cao ảnh)
     MIN_HEIGHT = image.shape[1] * 0.5
@@ -42,30 +44,53 @@ def cut_unecessary_img(image):
     for cnt in contours:
         x, y, w, h = cv2.boundingRect(cnt)
         if h >= MIN_HEIGHT:
-            new_contours += (cnt,)
+            new_contours.append(cnt)
 
+    # Nếu không có đường viền phù hợp, trả về ảnh ban đầu
     if not new_contours:
-        print("Không tìm thấy đường viền nào phù hợp.")
-        return
+        return image
 
     # Lấy đường viền lớn nhất thỏa mãn điều kiện
     con = new_contours[0]
-
-    # Vẽ đường viền lên mask và tạo ra ảnh kết quả
-    cv2.drawContours(mask, [con], -1, (255), thickness=cv2.FILLED)
     x, y, w, h = cv2.boundingRect(con)
+    if h < image.shape[0] and w < image.shape[1]:
+        # Vẽ đường tròn trắng mask
+        cv2.drawContours(mask, [con], -1, (255), thickness=cv2.FILLED)
 
-    # Áp dụng mask lên ảnh gốc để giữ lại phần ảnh có chứa đối tượng chính
-    result = cv2.bitwise_and(image, image, mask=mask)
+        # Áp dụng mask lên ảnh gốc để giữ lại phần đường tròn trắng ở ảnh gốc
+        result = cv2.bitwise_and(image, image, mask=mask)
 
-    # Cắt ảnh để có kích thước 1536x1536 pixel từ phần ảnh chứa đối tượng
-    result = result[y:y+1280, x:x+1280]
+        # Cắt ảnh
+        result = result[y:y+h, x:x+w]
 
     result = result.astype(np.uint8)
     return result
 
+
 # Xử lý các cell
 #padding cùng màu với pixel đầu tiên của ảnh
+def resize_image(image, value = 0):
+    """
+    Resize the input image to target x target x3. If the image is smaller, pad it. If it is larger, crop it.
+
+    Parameters:
+    image (array): The input image in BGR format.
+
+    Returns:
+    array: The resized image of size target x target x3.
+    """
+    height, width, _ = image.shape
+    target_height = ((height + 255) // 256 ) * 256
+    target_width = ((width + 255) // 256 ) * 256
+    pad_height = max(0, target_height - height)
+    pad_width = max(0, target_width - width)
+        # Pad the image
+    padded_image = cv2.copyMakeBorder(image, 0, pad_height, 0, pad_width, cv2.BORDER_CONSTANT, value=value)
+        
+    resized_image = padded_image[:target_height, :target_width, :]
+
+    return resized_image
+
 def new_resize_image(image, target_size, value = 0):
     """
     Resize the input image to target x target x3. If the image is smaller, pad it. If it is larger, crop it.
@@ -93,6 +118,7 @@ def new_resize_image(image, target_size, value = 0):
         resized_image = image[start_y:start_y + target_size, start_x:start_x + target_size, :]
 
     return resized_image
+
 
 # Crop các yeast cell
 # def crop_img(image, mask):
@@ -239,11 +265,12 @@ def predict_cell(image,mask, model, base_ratio=0.01):
     MAX_HEIGHT = image.shape[0] * 0.25
     
     bounding_boxes = []
+    contours_list = []
     normal = 0
     abnormal = 0
     normal_2x = 0
     abnormal_2x = 0
-    
+    id = 1
     for cnt in contours[:-1]:
         x, y, w, h = cv2.boundingRect(cnt)
         if w > MIN_HEIGHT and w < MAX_HEIGHT and h > MIN_HEIGHT and h < MAX_HEIGHT:
@@ -254,48 +281,62 @@ def predict_cell(image,mask, model, base_ratio=0.01):
             
             crop_number = image[y1:y2, x1:x2]
             crop_number = new_resize_image(crop_number, 64, value = image[0][0].tolist())
+            # Dien tich
+            area = cv2.contourArea(cnt)
+            #   Chu vi
+            perimeter = cv2.arcLength(cnt, True)
             
-            # tính diện tích và chu vi
-            base_size = get_circle_size(image)
-            circle_size = get_circle_size(image)
-            length_px = base_size/circle_size * base_ratio
-            area = round(cv2.contourArea(cnt)* length_px * length_px,3)
-            perimeter = round(cv2.arcLength(cnt, True)*length_px,3)
-            
-            cv2.putText(image, f"A:{str(area)}", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
-            cv2.putText(image, f"P:{str(perimeter)}", (x, y-22), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 0, 0), 1)
-            
+            #   Circularity
+            circularity = 4*math.pi * area / (perimeter*perimeter)
+
+            # Convexity
+            hull = cv2.convexHull(cnt)
+            convexity = cv2.arcLength(hull, True) / cv2.arcLength(cnt, True)
+
+            # CE Diameter
+            CE_diameter = math.sqrt(4 * area / math.pi)
+
+            #  Major/minor axis length
+            ellipse = cv2.fitEllipse(cnt)
+            major_axis_length = ellipse[1][1]
+            minor_axis_length = ellipse[1][0]
+
+            # Aspect Ratio
+            aspect_ratio = minor_axis_length / major_axis_length
+
+            # Max distance
+            max_distance = 0
+            for i in range(len(cnt)):
+                for j in range(i + 1, len(cnt)):
+                    distance = np.linalg.norm(cnt[i][0] - cnt[j][0])
+                    max_distance = max(max_distance, distance)
+            # print("Max distance: ", max_distance)
             crop_number = crop_number.astype(np.float32) / 255.0
             label = model.predict(np.expand_dims(crop_number, axis=0))
             predicted_class1 = np.argmax(label, axis =1)
             # predicted_class2 = np.argmax(predictions2, axis =1)
             #print(prediction)
             color = ""
-            id = ""
             if predicted_class1[0] == 2:
                 # print("normal")
                 cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 0, 255), 2)
                 normal += 1
                 color = "red"
-                id = "normal_" + str(normal)
             elif predicted_class1[0] == 0:
                 #print("abnormal")
                 cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (128, 0, 128), 2)
                 abnormal += 1
                 color = "purple"
-                id = "abnormal_" + str(abnormal)
             elif predicted_class1[0] == 1:
                 # print("abnormal_2x")
                 cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (255, 0, 0), 2)
                 abnormal_2x += 1
                 color = "blue"
-                id = "abnormal_2x_" + str(abnormal_2x)
             else:
                 #normal 2x
                 cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 255, 0), 2)
                 normal_2x += 1
                 color = "green"
-                id = "normal_2x_" + str(normal_2x)
             contour_points = [{"x": int(point[0][0]), "y": int(point[0][1])} for point in cnt]
             bounding_boxes.append({
                 "cell_id" : id,
@@ -305,12 +346,24 @@ def predict_cell(image,mask, model, base_ratio=0.01):
                 "height": h,
                 "type": label_dict[int(predicted_class1[0])],
                 "color": color,
+            })
+            contours_list.append({
+                "cell_id": id,
+                "area": area,
+                "perimeter": perimeter,
+                "circularity": circularity,
+                "convexity": convexity,
+                "CE_diameter": CE_diameter,
+                "major_axis_length": major_axis_length,
+                "minor_axis_length": minor_axis_length,
+                "aspect_ratio": aspect_ratio,
+                "max_distance": max_distance,
                 "contour": contour_points
             })
-            
+            id += 1
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
     
-    return normal, abnormal, normal_2x, abnormal_2x, image, bounding_boxes
+    return normal, abnormal, normal_2x, abnormal_2x, bounding_boxes, contours_list
 
 def split_image(image, patch_size=256):
     patches = []
@@ -321,22 +374,123 @@ def split_image(image, patch_size=256):
             if patch.shape[0] == patch_size and patch.shape[1] == patch_size:
                 patches.append(patch)
     return patches
+# ghép các ảnh nhỏ lại thành ảnh lớn
+def merge_images(anh_goc,images, tile_size = 256):
+    height_goc, width_goc, _ = anh_goc.shape
+    grid_height = (height_goc + tile_size - 1) // tile_size
+    grid_width = (width_goc + tile_size - 1) // tile_size
 
+    original_height = tile_size * grid_height
+    original_width = tile_size * grid_width
 
-def merge_predictions(predictions, tile_size = 256, grid_size = 5):
-    original_size = tile_size * grid_size
-    merged_image = np.zeros((original_size, original_size), dtype=np.float32)
+    merged_image = np.zeros((original_height, original_width), dtype=np.float32)
 
     idx = 0
-    for i in range(grid_size):
-        for j in range(grid_size):
-            if idx < len(predictions):
-                tile = predictions[idx]
-                if tile.ndim == 3 and tile.shape[-1] == 1:
-                    tile = tile[:, :, 0]  # Chọn kênh đầu tiên nếu là grayscale
-                elif tile.ndim == 3 and tile.shape[-1] == 3:
-                    tile = tile[:, :, 0]  # Chọn kênh đầu tiên nếu là ảnh màu
+    for i in range(grid_height):
+        for j in range(grid_width):
+            if idx < len(images):
+                tile = images[idx]
+                if tile.ndim == 3:
+                    tile = tile[:, :, 0]
+                elif tile.ndim == 2:
+                    tile = tile[:,:] 
                 merged_image[i*tile_size:(i+1)*tile_size, j*tile_size:(j+1)*tile_size] = tile
                 idx += 1
 
     return merged_image
+
+
+def find_space(x1,y1,x2,y2,height,width,Is_Dark,gray):
+    #global Dark_Distance,White_Distance,height,width,Is_Dark,gray
+    temp1=y2-y1
+    temp2=x2-x1
+    Dark_Distance=list()
+    White_Distance=list()
+    if temp1==0: 
+        y=y1
+        Being_Dark=True
+        start_point=(0,y)
+        for x in range(0,width):
+            if gray[y][x]<=Is_Dark: # is dark
+                if not Being_Dark:
+                    Being_Dark=True
+                    end_point=(x,y)
+                    distance=math.sqrt((end_point[0]-start_point[0])**2+(end_point[1]-start_point[1])**2)
+                    White_Distance.append(distance)
+                    start_point=end_point
+            else: # is white
+                if Being_Dark:
+                    Being_Dark=False
+                    end_point=(x,y)
+                    distance=math.sqrt((end_point[0]-start_point[0])**2+(end_point[1]-start_point[1])**2)
+                    Dark_Distance.append(distance)
+                    start_point=end_point
+    elif temp2==0:
+        x=x1
+        Being_Dark=True
+        start_point=(x,0)
+        for y in range(0,height):
+            if gray[y][x]<=Is_Dark: # is dark
+                if not Being_Dark:
+                    Being_Dark=True
+                    end_point=(x,y)
+                    distance=math.sqrt((end_point[0]-start_point[0])**2+(end_point[1]-start_point[1])**2)
+                    White_Distance.append(distance)
+                    start_point=end_point
+            else: # is white
+                if Being_Dark:
+                    Being_Dark=False
+                    end_point=(x,y)
+                    distance=math.sqrt((end_point[0]-start_point[0])**2+(end_point[1]-start_point[1])**2)
+                    Dark_Distance.append(distance)
+                    start_point=end_point
+    else:
+        # ax+b=y
+        a=temp1/temp2
+        b=y1-a*x1
+        Being_Dark=True
+        temp=round(b)
+
+        if temp>=0:
+            if temp>=height:
+                start_x=math.floor((int(height-1)-b)/a)
+                start_point=(start_x,height-1)
+            else:
+                start_x=0
+                start_point=(start_x,temp)
+        else:
+            start_x=round(-b/a)
+            start_point=(start_x,0)
+
+        for x in range(start_x,width):
+            y=round(a*x+b)
+            if not 0<=y<height:break
+            if gray[y][x]<=Is_Dark: # is dark
+                if not Being_Dark:
+                    Being_Dark=True
+                    end_point=(x,y)
+                    distance=math.sqrt((end_point[0]-start_point[0])**2+(end_point[1]-start_point[1])**2)
+                    White_Distance.append(distance)
+                    start_point=end_point
+            else: # is white
+                if Being_Dark:
+                    Being_Dark=False
+                    end_point=(x,y)
+                    distance=math.sqrt((end_point[0]-start_point[0])**2+(end_point[1]-start_point[1])**2)
+                    Dark_Distance.append(distance)
+                    start_point=end_point
+    return White_Distance,Dark_Distance
+
+def Finding_ans(List,min_ans,max_ans):
+    Frequency_Board=dict(Counter(List))
+    #Check_Board=dict()
+    Count=0
+    Sum=0
+    for i in Frequency_Board:
+        if min_ans<=i<=max_ans:
+            Sum+=i*Frequency_Board[i]
+            Count+=Frequency_Board[i]
+            #Check_Board[i]=Frequency_Board[i]
+    Ans=Sum/Count
+    return Ans
+

@@ -2,9 +2,11 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 import base64
 import numpy as np
-from process_image import cut_unecessary_img, new_resize_image, predict_cell, split_image, merge_predictions
+from process_image import cut_unecessary_img, resize_image, predict_cell, split_image, merge_images
 from PIL import Image
 import io
+import json
+import os
 from models.unet_model import unet
 from models.cnn_model import cnn
 
@@ -18,7 +20,7 @@ def predict_mask(image_data):
         
         # Perform image processing
         image = cut_unecessary_img(image)
-        image = new_resize_image(image, 1280)
+        image = resize_image(image, image[0][0].tolist())
         image_normalize = image.astype(np.float32) / 255.0
         
         # Split image into patches
@@ -34,13 +36,13 @@ def predict_mask(image_data):
             predictions.extend(batch_predictions)
         
         predictions = np.array(predictions)
-        merge_mask = merge_predictions(predictions)
+        merge_mask = merge_images(image,predictions)
         merge_mask = (merge_mask > 0.5).astype(np.uint8) * 255
         
         return image, merge_mask
     except Exception as e:
         raise RuntimeError(f"Error in image prediction: {e}")
-
+    
 @image_router.post("/request_image/")
 async def upload_image(request: Request):
     try:
@@ -51,7 +53,7 @@ async def upload_image(request: Request):
             raise HTTPException(status_code=400, detail="base64_image field is required")
         
         base64_image = body["base64_image"]
-        
+        image_id = body["image_id"]
         # Decode Base64 image
         image_data = base64.b64decode(base64_image)
         
@@ -59,9 +61,10 @@ async def upload_image(request: Request):
         image, mask = predict_mask(image_data)
         
         # Predict cell types using the CNN model
-        normal, abnormal, normal_2x, abnormal_2x, result, bounding_boxes = predict_cell(image, mask, cnn)
+        normal, abnormal, normal_2x, abnormal_2x, bounding_boxes,contours_list = predict_cell(image, mask, cnn)
         
         response_content = {
+            "image_id": image_id,
             "cell_counts": {
                 "normal": normal,
                 "abnormal": abnormal,
@@ -69,9 +72,22 @@ async def upload_image(request: Request):
                 "abnormal_2x": abnormal_2x
             },
             "bounding_boxes": bounding_boxes,
+            "contours_list": contours_list
         }
-        
-        return JSONResponse(content=response_content)
+        file_name = os.path.join("saved_json",f"{image_id}.json")
+        with open(file_name, 'w') as json_file:
+            json.dump(response_content, json_file)
+        response_only_bounding_boxes = {
+            "image_id": image_id,
+            "cell_counts": {
+                "normal": normal,
+                "abnormal": abnormal,
+                "normal_2x": normal_2x,
+                "abnormal_2x": abnormal_2x
+            },
+            "bounding_boxes": bounding_boxes
+        }
+        return JSONResponse(content = response_only_bounding_boxes)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
