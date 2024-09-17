@@ -1,48 +1,13 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 import base64
-import numpy as np
-from process_image import cut_unecessary_img, resize_image, predict_cell, split_image, merge_images
-from PIL import Image
-import io
+from process.prediction import predict_mask, predict_cell
 import json
 import os
-from models.unet_model import unet
 from models.cnn_model import cnn
 
 image_router = APIRouter()
 
-def predict_mask(image_data):
-    try:
-        # Decode and preprocess image
-        image = Image.open(io.BytesIO(image_data))
-        image = np.array(image)
-        
-        # Perform image processing
-        image = cut_unecessary_img(image)
-        image = resize_image(image, image[0][0].tolist())
-        image_normalize = image.astype(np.float32) / 255.0
-        
-        # Split image into patches
-        image_array = split_image(image_normalize)
-        
-        # Predict using U-Net model
-        predictions = []
-        batch_size = 1  
-
-        for i in range(0, len(image_array), batch_size):
-            batch = np.array(image_array[i:i+batch_size])
-            batch_predictions = unet.predict(batch)
-            predictions.extend(batch_predictions)
-        
-        predictions = np.array(predictions)
-        merge_mask = merge_images(image,predictions)
-        merge_mask = (merge_mask > 0.5).astype(np.uint8) * 255
-        
-        return image, merge_mask
-    except Exception as e:
-        raise RuntimeError(f"Error in image prediction: {e}")
-    
 @image_router.post("/request_image/")
 async def upload_image(request: Request):
     try:

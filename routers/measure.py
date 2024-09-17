@@ -1,9 +1,7 @@
 import cv2
 import numpy as np
-import json
-from process_image import find_space,Finding_ans
+from process.calculator import find_space,Finding_ans
 from fastapi import APIRouter, Request, HTTPException
-from fastapi.responses import JSONResponse
 import base64
 from PIL import Image
 import io
@@ -69,7 +67,7 @@ async def pixel_to_um_4_times(request: Request):
         #cv2.imwrite('Result.jpg',image) #<= origin image with green lines
         #cv2.imwrite('Result Gray.jpg',gray) #<= gray image
 
-        return White_ans*4+Dark_ans*4
+        return White_ans*5+Dark_ans*5
     except Exception as e:
         return {"error": str(e)}
 
