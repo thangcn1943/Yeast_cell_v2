@@ -16,11 +16,18 @@ Dataset cho dự án có thể được tải xuống từ liên kết dưới �
    python -m venv env
    source env/bin/activate  # Với Linux/MacOS
    env\Scripts\activate  # Với Windows
+   ```
 ### Cài đặt các thư viện từ tệp requirements.txt:
 
 ```bash
 pip install -r requirements.txt
-
+```
 ### Chạy API với FASTAPI
 ```bash
 uvicorn main:app --reload
+```
+### Truy cập để đọc hướng dẫn và thử nghiệm
+```bash
+http://localhost:8000/docs
+```
+Có thể import file json ở trên trong postman để test các api
