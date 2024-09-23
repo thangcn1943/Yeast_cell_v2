@@ -16,20 +16,11 @@ Dataset cho dự án có thể được tải xuống từ liên kết dưới �
    python -m venv env
    source env/bin/activate  # Với Linux/MacOS
    env\Scripts\activate  # Với Windows
-Cài đặt các thư viện từ tệp requirements.txt:
+### Cài đặt các thư viện từ tệp requirements.txt:
 
-   ```bash
-   pip install -r requirements.txt
+```bash
+pip install -r requirements.txt
 
-Chạy mô hình phân đoạn và phân loại tế bào nấm men: 
-Đảm bảo rằng dataset được tải về và nằm đúng vị trí được chỉ định trong mã nguồn.  
-
-Chạy API với FastAPI:
-
-Nếu dự án có API để trả về thông tin tế bào, bạn có thể chạy bằng lệnh:
-   ```bash
-   uvicorn app:app --reload
-
-
-Truy cập vào http://localhost:8000/docs để xem tài liệu và thử nghiệm  
-Có thể sử dụng postman và import để test  
+### Chạy API với FASTAPI
+```bash
+uvicorn main:app --reload
