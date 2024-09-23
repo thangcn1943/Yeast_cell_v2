@@ -20,6 +20,7 @@ Cài đặt các thư viện từ tệp requirements.txt:
   ```bash
 pip install -r requirements.txt  
 
+
 Chạy mô hình phân đoạn và phân loại tế bào nấm men:
 
   ```bash
