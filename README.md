@@ -17,9 +17,9 @@ Dataset cho dự án có thể được tải xuống từ liên kết dưới �
    source env/bin/activate  # Với Linux/MacOS
    env\Scripts\activate  # Với Windows
 Cài đặt các thư viện từ tệp requirements.txt:
+
    ```bash
    pip install -r requirements.txt  
-
 
 Chạy mô hình phân đoạn và phân loại tế bào nấm men: 
 Đảm bảo rằng dataset được tải về và nằm đúng vị trí được chỉ định trong mã nguồn.  
