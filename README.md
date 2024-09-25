@@ -12,11 +12,11 @@ Dataset cho dự án có thể được tải xuống từ liên kết dưới �
 
 1. **Tạo môi trường ảo** (khuyến khích):
 
-   ```bash
-   python -m venv env
-   source env/bin/activate  # Với Linux/MacOS
-   env\Scripts\activate  # Với Windows
-   ```
+```bash
+python -m venv env
+source env/bin/activate  # Với Linux/MacOS
+env\Scripts\activate  # Với Windows
+```
 ### Cài đặt các thư viện từ tệp requirements.txt:
 
 ```bash
@@ -31,3 +31,4 @@ uvicorn main:app --reload
 http://localhost:8000/docs
 ```
 Có thể import file json ở trên trong postman để test các api
+### Quá trình train mô hình phân đoạn nấm --> unet_keras.ipynb
