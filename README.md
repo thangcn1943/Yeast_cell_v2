@@ -1,5 +1,5 @@
 # Yeast cell detection
-Dự án này sử dụng mô hình UNET để phát hiện, phân đoạn và phân loại các tế bào nấm men từ hình ảnh. Ứng dụng của dự án giúp cải thiện độ chính xác trong việc chẩn đoán các bệnh liên quan đến nấm men thông qua việc phân tích tự động các tế bào bất thường.
+Dự án này sử dụng mô hình UNET để phát hiện, phân đoạn và phân loại các tế bào nấm men từ hình ảnh. Ứng dụng của dự án giúp cải thiện độ chất lượng của bia, các sản phẩm lên men liên quan đến nấm men thông qua việc phân tích tự động các tế bào bất thường.
 ## Dataset
 
 Dataset cho dự án có thể được tải xuống từ liên kết dưới đây:
