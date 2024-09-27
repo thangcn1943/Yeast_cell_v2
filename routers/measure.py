@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, HTTPException
 import base64
 from PIL import Image
 import io
+import os
 
 measure_router = APIRouter()
 
@@ -66,7 +67,11 @@ async def pixel_to_um_4_times(request: Request):
         #cv2.waitKey(0)
         #cv2.imwrite('Result.jpg',image) #<= origin image with green lines
         #cv2.imwrite('Result Gray.jpg',gray) #<= gray image
-
+        file_path = "thangdo.txt"
+        if(os.path.exists(file_path) == False):
+            os.mkdir(file_path)
+        with open("thangdo.txt", "w") as file:
+            file.write(str(White_ans*5+Dark_ans*5))
         return White_ans*5+Dark_ans*5
     except Exception as e:
         return {"error": str(e)}

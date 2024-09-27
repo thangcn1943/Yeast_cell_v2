@@ -8,7 +8,7 @@ from process.pre_process import split_image, merge_images, resize_image, cut_une
 from process.process_mask import get_watershed_mask
 from process.calculator import black_percentage
 
-
+    
 def predict_cell(image,mask, model):
     """
     Parameters:
@@ -25,6 +25,8 @@ def predict_cell(image,mask, model):
     bounding_boxes (list): A list of objects containing information about the location, size, type, and contours of the cells.
 
     """
+    with open("thangdo.txt") as f:
+        pixel_micro_m = 1.0 / float(f.read())
     label_dict = {
         0: "abnormal",
         1: "abnormal_2x",
@@ -56,61 +58,61 @@ def predict_cell(image,mask, model):
             x2 = min(mask.shape[1], x + w + 4)
             
             crop_number = image[y1:y2, x1:x2]
-            crop_number = new_resize_image(crop_number, 64, value = image[0][0].tolist())
+            crop_number = new_resize_image(crop_number, 64, value = image[0][0].tolist()) 
             # Dien tich
-            area = cv2.contourArea(cnt)
+            area = cv2.contourArea(cnt) * pixel_micro_m * pixel_micro_m
             #   Chu vi
-            perimeter = cv2.arcLength(cnt, True)
+            perimeter = cv2.arcLength(cnt, True) * pixel_micro_m
             
             #   Circularity
-            circularity = 4*math.pi * area / (perimeter*perimeter)
+            circularity = 4*math.pi * area / (perimeter*perimeter) if perimeter != 0 else 0
 
             # Convexity
-            hull = cv2.convexHull(cnt)
-            convexity = cv2.arcLength(hull, True) / cv2.arcLength(cnt, True)
+            hull = cv2.convexHull(cnt) 
+            convexity = cv2.arcLength(hull, True) / cv2.arcLength(cnt, True) 
 
             # CE Diameter
-            CE_diameter = math.sqrt(4 * area / math.pi)
+            CE_diameter = math.sqrt(4 * area / math.pi) 
 
             #  Major/minor axis length
-            ellipse = cv2.fitEllipse(cnt)
-            major_axis_length = ellipse[1][1]
-            minor_axis_length = ellipse[1][0]
+            ellipse = cv2.fitEllipse(cnt) 
+            major_axis_length = ellipse[1][1] 
+            minor_axis_length = ellipse[1][0] 
 
             # Aspect Ratio
-            aspect_ratio = minor_axis_length / major_axis_length
+            aspect_ratio = minor_axis_length / major_axis_length if major_axis_length != 0 else 0
 
             # Max distance
             max_distance = 0
             for i in range(len(cnt)):
                 for j in range(i + 1, len(cnt)):
-                    distance = np.linalg.norm(cnt[i][0] - cnt[j][0])
-                    max_distance = max(max_distance, distance)
+                    distance = np.linalg.norm(cnt[i][0] - cnt[j][0]) * pixel_micro_m
+                    max_distance = max(max_distance, distance) 
             # print("Max distance: ", max_distance)
-            crop_number = crop_number.astype(np.float32) / 255.0
-            label = model.predict(np.expand_dims(crop_number, axis=0))
+            crop_number = crop_number.astype(np.float32) / 255.0  
+            label = model.predict(np.expand_dims(crop_number, axis=0)) 
             predicted_class1 = np.argmax(label, axis =1)
             # predicted_class2 = np.argmax(predictions2, axis =1)
             #print(prediction)
             color = None
             if predicted_class1[0] == 2:
                 # print("normal")
-                cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 0, 255), 2)
+                # cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 0, 255), 2)
                 normal += 1
                 color = "red"
             elif predicted_class1[0] == 0:
                 #print("abnormal")
-                cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (128, 0, 128), 2)
+                # cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (128, 0, 128), 2)
                 abnormal += 1
                 color = "purple"
             elif predicted_class1[0] == 1:
                 # print("abnormal_2x")
-                cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (255, 0, 0), 2)
+                # cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (255, 0, 0), 2)
                 abnormal_2x += 1
                 color = "blue"
             else:
                 #normal 2x
-                cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 255, 0), 2)
+                # cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 255, 0), 2)
                 normal_2x += 1
                 color = "green"
             contour_points = [{"x": int(point[0][0]), "y": int(point[0][1])} for point in cnt]
@@ -196,11 +198,11 @@ def dead_or_alive_black_percentage(img_goc1):
         type = None
         color = None
         if (black_percentage(img_temp) <= 35):
-            cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 255, 0), 2)
+            #cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (0, 255, 0), 2)
             type = "alive"
             color = "green"
         else :
-            cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (255, 0, 0), 2)
+            #cv2.rectangle(image, (x-2, y-2), ( x + w + 4 , y + h + 4 ) , (255, 0, 0), 2)
             type = "dead"
             color = "red"
         contour_points = [{"x": int(point[0][0]), "y": int(point[0][1])} for point in cnt]
@@ -219,6 +221,6 @@ def dead_or_alive_black_percentage(img_goc1):
         })
         
         id += 1
-    return bounding_boxes, contours_list, image
+    return bounding_boxes, contours_list
         
         
