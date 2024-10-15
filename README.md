@@ -22,6 +22,14 @@ env\Scripts\activate  # Với Windows
 ```bash
 pip install -r requirements.txt
 ```
+### Training unet with keras
+```bash
+unet_keras.ipynb
+```
+### Transfer learning cnn with pytorch
+```bash
+cnn_training_pytorch.ipynb
+```
 ### Chạy API với FASTAPI
 ```bash
 uvicorn main:app --reload
