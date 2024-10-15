@@ -39,4 +39,3 @@ uvicorn main:app --reload
 http://localhost:8000/docs
 ```
 Có thể import file json ở trên trong postman để test các api
-### Quá trình train mô hình phân đoạn nấm --> unet_keras.ipynb
