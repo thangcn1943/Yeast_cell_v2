@@ -1,12 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from process.prediction import predict_mask, predict_cell
 import json
 import os
 
 image_router = APIRouter()
 
-@image_router.post("/request_image/")
+@image_router.post("/request_normal_image/")
 async def upload_image(request: Request):
     try:
         # Read JSON data from request body
@@ -31,7 +30,7 @@ async def upload_image(request: Request):
                 bbox = data["bounding_boxes"]
                 response = {
                     "cell_counts": cell_counts,
-                    "bounding_boxes": bbox
+                    "bounding_boxes": bbox,
                 }
                 return JSONResponse(content=response)
                 

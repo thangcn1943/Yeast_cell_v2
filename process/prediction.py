@@ -7,7 +7,7 @@ import io
 from process.pre_process import split_image, merge_images, resize_image, cut_unecessary_img, new_resize_image
 from process.process_mask import get_watershed_mask
 from process.calculator import black_percentage
-
+import base64
     
 def predict_cell(image,mask, model):
     """
@@ -139,7 +139,9 @@ def predict_cell(image,mask, model):
                 "contour": contour_points
             })
             id += 1
-    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    # base64_image = cv2.imencode('.jpg', image)[1].tobytes()
+    # encoded_image = base64.b64encode(base64_image).decode('utf-8')
     
     return normal, abnormal, normal_2x, abnormal_2x, bounding_boxes, contours_list
 
@@ -174,11 +176,40 @@ def predict_mask(image_data):
     except Exception as e:
         raise RuntimeError(f"Error in image prediction: {e}")
 
+def predict_mask_v2(image_data):
+    try:
+        # Decode and preprocess image
+        image = Image.open(io.BytesIO(image_data))
+        image = np.array(image)
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Perform image processing
+        image = cut_unecessary_img(image)
+        image = resize_image(image, image[0][0].tolist())
+        image_normalize = image.astype(np.float32) / 255.0
+        
+        # Split image into patches
+        image_array = split_image(image_normalize)
+        
+        # Predict using U-Net model
+        predictions = []
+        batch_size = 1  
+
+        for i in range(0, len(image_array), batch_size):
+            batch = np.array(image_array[i:i+batch_size])
+            batch_predictions = unet.predict(batch)
+            predictions.extend(batch_predictions)
+        
+        predictions = np.array(predictions)
+        merge_mask = merge_images(image,predictions)
+        merge_mask = (merge_mask > 0.5).astype(np.uint8) * 255
+        
+        return image, merge_mask
+    except Exception as e:
+        raise RuntimeError(f"Error in image prediction: {e}")
 
 def dead_or_alive_black_percentage(img_goc1):
     id = 1
-
-    image, mask_using_unet = predict_mask(img_goc1)
+    image, mask_using_unet = predict_mask_v2(img_goc1)
     
     mask = get_watershed_mask(mask_using_unet)
     

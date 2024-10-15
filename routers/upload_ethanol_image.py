@@ -1,43 +1,29 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 import base64
-from process.prediction import predict_mask, predict_cell
-import json
-import os
-from models.cnn_model import cnn
-import os
+from process.prediction import dead_or_alive_black_percentage
 from concurrent.futures import ThreadPoolExecutor
+import os
+import json 
+upload_ethanol_image_router = APIRouter()
 
-upload_image_router = APIRouter()
-
-def analyze_image(image_data, image_id):
-    # Predict image and mask
-    image, mask = predict_mask(image_data)
-    
-    # Predict cell types using the CNN model
-    normal, abnormal, normal_2x, abnormal_2x, bounding_boxes,contours_list = predict_cell(image, mask, cnn)
-    
+def analyze_ethanol_image(image_data, image_id):
+    bounding_boxes, contours_list = dead_or_alive_black_percentage(image_data)
     response_content = {
         "image_id": image_id,
-        "cell_counts": {
-            "normal": normal,
-            "abnormal": abnormal,
-            "normal_2x": normal_2x,
-            "abnormal_2x": abnormal_2x
-        },
         "bounding_boxes": bounding_boxes,
-        "contours_list": contours_list
+        "contours_list": contours_list,
     }
     file_name = os.path.join("saved_json",f"{image_id}.json")
+    os.makedirs("saved_json", exist_ok=True)
     with open(file_name, 'w') as json_file:
         json.dump(response_content, json_file)
 
 executor = ThreadPoolExecutor(max_workers=4)
 
-@upload_image_router.post("/upload_image/")
-async def upload_image(request: Request):
+@upload_ethanol_image_router.post("/upload_image/ethanol_image/")
+async def upload_ethanol_image(request: Request):
     try:
-        # Read JSON data from request body
         body = await request.json()
         
         if "base64_image" not in body:
@@ -45,18 +31,17 @@ async def upload_image(request: Request):
         
         base64_image = body["base64_image"]
         image_id = body["image_id"]
+
         # Decode Base64 image
         image_data = base64.b64decode(base64_image)
-        
-        executor.submit(analyze_image, image_data, image_id)
+
+        executor.submit(analyze_ethanol_image, image_data, image_id)
         
         response_content = {
-            "image_id": image_id,
             "message": "Image uploaded successfully"
         }
         
-        return JSONResponse(content = response_content)
-        
+        return JSONResponse(content=response_content)
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
