@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CORS with Body</title>
+</head>
+<body>
+    <h1>Test CORS with POST Request</h1>
+    <script>
+        fetch('http://localhost:8000/request_normal_image/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',  
+            },
+            body: JSON.stringify({
+                image_id: "anh_1"
+            })
+        })
+        .then(response => response.json())
+        .then(data => console.log('Response data:', data))
+        .catch(error => console.log('CORS error:', error));
+    </script>
+</body>
+</html>
