@@ -4,12 +4,18 @@ from routers.measure import measure_router
 from routers.alive_classification import alive_classification_router
 from routers.upload_ethanol_image import upload_ethanol_image_router
 from routers.upload_normal_image import upload_normal_image_router
-
+from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI
 
 app = FastAPI()
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,  
+    allow_methods=["*"], 
+    allow_headers=["*"], 
+)
 app.include_router(image_router)
 app.include_router(id_router)
 app.include_router(measure_router)
