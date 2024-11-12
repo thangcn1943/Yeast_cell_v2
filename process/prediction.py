@@ -9,7 +9,7 @@ from process.process_mask import get_watershed_mask
 from process.calculator import black_percentage
 import base64
     
-def predict_cell(image,mask, model):
+def predict_cell(image,image_name,mask, model):
     """
     Parameters:
     image (numpy.ndarray): The input image containing cells, in BGR format.
@@ -26,7 +26,7 @@ def predict_cell(image,mask, model):
 
     """
     with open("thangdo.txt") as f:
-        pixel_micro_m = 1.0 / float(f.read())
+        pixel_micro_m = 10.0 / float(f.read())
     label_dict = {
         0: "abnormal",
         1: "abnormal_2x",
@@ -117,7 +117,7 @@ def predict_cell(image,mask, model):
                 color = "green"
             contour_points = [{"x": int(point[0][0]), "y": int(point[0][1])} for point in cnt]
             bounding_boxes.append({
-                "cell_id" : id,
+                "cell_id" : f"{image_name}_" + str(id),
                 "x": x,
                 "y": y,
                 "width": w,
@@ -126,7 +126,7 @@ def predict_cell(image,mask, model):
                 "color": color,
             })
             contours_list.append({
-                "cell_id": id,
+                "cell_id": f"{image_name}_" + str(id),
                 "area": area,
                 "perimeter": perimeter,
                 "circularity": circularity,

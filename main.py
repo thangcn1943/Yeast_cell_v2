@@ -22,3 +22,7 @@ app.include_router(measure_router)
 app.include_router(alive_classification_router)
 app.include_router(upload_ethanol_image_router)
 app.include_router(upload_normal_image_router)
+
+if "__name__" == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port = 8000, ssl_keyfile = "key.pem", ssl_certfile = "cert.pem")

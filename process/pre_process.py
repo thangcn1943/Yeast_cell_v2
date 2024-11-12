@@ -89,6 +89,16 @@ def resize_image(image, value=0):
 
     return resized_image
 
+def split_image(image, patch_size=256):
+    patches = []
+    h, w, _ = image.shape
+    for y in range(0, h, patch_size):
+        for x in range(0, w, patch_size):
+            patch = image[y:y+patch_size, x:x+patch_size]
+            if patch.shape[0] == patch_size and patch.shape[1] == patch_size:
+                patches.append(patch)
+    return patches
+
 def new_resize_image(image, target_size, value=0):
     """
     Resize the input image to target x target x3. If the image is smaller, pad it. If it is larger, crop it.
@@ -117,15 +127,6 @@ def new_resize_image(image, target_size, value=0):
 
     return resized_image
 
-def split_image(image, patch_size=256):
-    patches = []
-    h, w, _ = image.shape
-    for y in range(0, h, patch_size):
-        for x in range(0, w, patch_size):
-            patch = image[y:y+patch_size, x:x+patch_size]
-            if patch.shape[0] == patch_size and patch.shape[1] == patch_size:
-                patches.append(patch)
-    return patches
 
 # Merge small images back into a large image
 def merge_images(original_image, images, tile_size=256):
