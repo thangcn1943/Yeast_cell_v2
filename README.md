@@ -63,11 +63,11 @@ env\Scripts\activate  # Với Windows
 ```bash
 pip install -r requirements.txt
 ```
-### Training unet with keras
+### Training unet
 ```bash
 unet_keras.ipynb
 ```
-### Transfer learning cnn with pytorch
+### Transfer learning cnn
 ```bash
 cnn_training_pytorch.ipynb
 ```
