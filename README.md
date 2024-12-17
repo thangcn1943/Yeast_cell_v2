@@ -42,20 +42,4 @@ env\Scripts\activate  # Với Windows
 ```bash
 pip install -r requirements.txt
 ```
-### Training unet
-```bash
-unet_keras.ipynb
-```
-### Transfer learning cnn
-```bash
-cnn_training_pytorch.ipynb
-```
-### Chạy API với FASTAPI
-```bash
-uvicorn main:app --reload
-```
-### Truy cập để đọc hướng dẫn và thử nghiệm
-```bash
-http://localhost:8000/docs
-```
-Có thể import file json ở trên trong postman để test các api
+
