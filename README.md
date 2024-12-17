@@ -25,27 +25,6 @@
 
 &emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;![image](https://github.com/user-attachments/assets/9374aacc-6e74-4f2d-b6d9-ffeddba42586)
 
-
-## II. Tiền xử lý dữ liệu:
-&ensp;&ensp;&ensp;Từ ảnh gốc ban đầu được gán nhãn, sử dụng một sô kỹ thuật xử lý ảnh để có thể tách ra được các tế bào đã được gán nhãn,sau đó kiểm tra màu sắc có trong ảnh để phân loại các tế bào này vào các phân loại của nó.
-
-## III. Huấn luyện mô hình CNN:
-&ensp;&ensp;&ensp; Xây dựng mô hình CNN để phân loại 4 loại tế bào:
-
-![image](https://github.com/user-attachments/assets/a8f9a018-d128-4118-bffc-84c013eeaa17)
-
-## IV. Huấn luyện UNET để dự đoán mask của ảnh:
-&ensp;&ensp;&ensp; Xây dựng và huấn luyện một mô hình UNET để dự đoán mask của ảnh đầu vào:
-
-![image](https://github.com/user-attachments/assets/ea788cd9-be7b-4e7a-b708-e7c80b4c88b1)
-<p>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Ảnh gốc</p>
-
-![image](https://github.com/user-attachments/assets/ba09b0eb-3823-4b5c-8454-9ee3f3c51f11)
-<p>&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;&emsp;Mask</p>
-## IV. Dự đoán:
-
-&ensp;&ensp;&ensp;Sử dụng UNET đã huấn luyện để dự đoán ra mask của ảnh, sau đó CNN để phân loại từng tế bào
-
 ![image](https://github.com/user-attachments/assets/7f52f81b-4405-4c1b-9767-6e165b5d543d)
 ## Cài đặt Thư viện
 
